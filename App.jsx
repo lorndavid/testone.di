@@ -14,8 +14,6 @@ UserPlus, UserX, Lock, Unlock, BarChart3, Download, FileText
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
-// ... rest of your code remains the same
-
 // --- Configuration ---
 const firebaseConfig = {
 apiKey: "AIzaSyAc2g-t9A7du3K_nI2fJnw_OGxhmLfpP6s",
@@ -30,7 +28,7 @@ measurementId: "G-NQ798D9J6K"
 
 const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dttx1x743/image/upload";
 const CLOUDINARY_PRESET = "difulllist";
-const ALLOWED_ADMIN_IDS = ['250','9090', '246', '249', '247', '273', '169'];
+const ALLOWED_ADMIN_IDS = ['250', '246', '249', '247', '273', '169'];
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -138,7 +136,7 @@ return () => unsubLogs();
 
 // Effect to fetch all admin logs for superadmin
 useEffect(() => {
-if (!adminProfile || adminProfile.id !== '9090') return;
+if (!adminProfile || adminProfile.id !== '250') return;
 
 const allLogsRef = ref(db, 'admin_logs');
 const unsubAllLogs = onValue(allLogsRef, (snapshot) => {
@@ -191,7 +189,7 @@ const visibleStudents = useMemo(() => filteredStudents.slice(0, displayLimit), [
 
 // Calculate admin capture statistics
 const adminCaptureStats = useMemo(() => {
-if (!adminProfile || adminProfile.id !== '9090') return [];
+if (!adminProfile || adminProfile.id !== '250') return [];
 
 const stats = ALLOWED_ADMIN_IDS.map(adminId => {
 const admin = adminList.find(a => a.id === adminId);
@@ -216,7 +214,7 @@ return stats.sort((a, b) => b.uploadCount - a.uploadCount);
 }, [adminList, allAdminLogs]);
 
 // Check if current admin is superadmin
-const isSuperAdmin = adminProfile && adminProfile.id === '9090';
+const isSuperAdmin = adminProfile && adminProfile.id === '250';
 
 // --- Actions ---
 const showAlert = (message, type = 'success') => {
@@ -251,7 +249,7 @@ const profile = {
 id: adminId,
 name: admin.name,
 verified: true,
-isSuperAdmin: adminId === '9090'
+isSuperAdmin: adminId === '250'
 };
 setAdminProfile(profile);
 localStorage.setItem('adminData', JSON.stringify(profile));
@@ -381,307 +379,455 @@ setSelectedAdminDetails(admin);
 };
 
 const handleExportAdminData = async (adminId) => {
-    const admin = adminList.find(a => a.id === adminId);
-    if (!admin) return;
+const admin = adminList.find(a => a.id === adminId);
+if (!admin) return;
 
-    // Get all logs for this admin
-    const adminLogs = allAdminLogs.filter(log => log.adminId === adminId);
-    
-    // Get all photos uploaded by this admin
-    const uploadLogs = adminLogs.filter(log => log.action === 'UPLOAD_PHOTO');
-    const deleteLogs = adminLogs.filter(log => log.action === 'DELETE_PHOTO');
-    
-    // Get all students with photos uploaded by this admin
-    const uploadedStudents = allStudents.filter(student => {
-        const studentUploadLogs = adminLogs.filter(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
-        return studentUploadLogs.length > 0;
-    }).slice(0, 20); // Limit to 20 students for PDF
+// Get all logs for this admin
+const adminLogs = allAdminLogs.filter(log => log.adminId === adminId);
 
-    // Create PDF with custom size
-    const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-    });
+// Get all photos uploaded by this admin
+const uploadLogs = adminLogs.filter(log => log.action === 'UPLOAD_PHOTO');
+const deleteLogs = adminLogs.filter(log => log.action === 'DELETE_PHOTO');
 
-    // Load Khmer fonts from Google Fonts
-    try {
-        // Load Noto Sans Khmer fonts
-        await Promise.all([
-            fetch('https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Khmer/NotoSansKhmer-Regular.ttf')
-                .then(response => response.arrayBuffer())
-                .then(fontData => {
-                    const base64Font = btoa(String.fromCharCode(...new Uint8Array(fontData)));
-                    doc.addFileToVFS('NotoSansKhmer-Regular.ttf', base64Font);
-                    doc.addFont('NotoSansKhmer-Regular.ttf', 'NotoSansKhmer', 'normal');
-                }),
-            fetch('https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Khmer/NotoSansKhmer-Bold.ttf')
-                .then(response => response.arrayBuffer())
-                .then(fontData => {
-                    const base64Font = btoa(String.fromCharCode(...new Uint8Array(fontData)));
-                    doc.addFileToVFS('NotoSansKhmer-Bold.ttf', base64Font);
-                    doc.addFont('NotoSansKhmer-Bold.ttf', 'NotoSansKhmer', 'bold');
-                })
-        ]);
-        console.log('Khmer fonts loaded successfully');
-    } catch (e) {
-        console.error('Failed to load Khmer fonts:', e);
-        // Continue with default font if Khmer fonts fail to load
-    }
+// Get all students with photos uploaded by this admin
+const uploadedStudents = allStudents.filter(student => {
+const studentUploadLogs = adminLogs.filter(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
+return studentUploadLogs.length > 0;
+}).slice(0, 20); // Limit to 20 students for PDF
 
-    // Page dimensions
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
-    const contentWidth = pageWidth - (margin * 2);
+// Create PDF with custom size
+const doc = new jsPDF({
+orientation: 'portrait',
+unit: 'mm',
+format: 'a4'
+});
 
-    // Helper functions - defined at the beginning
-    const addKhmerText = (text, x, y, size = 12, style = 'normal', align = 'left') => {
-        try {
-            // Try to use Khmer font first
-            doc.setFont('NotoSansKhmer', style);
-            doc.setFontSize(size);
-            if (align === 'center') {
-                doc.text(text, x, y, { align: 'center' });
-            } else {
-                doc.text(text, x, y);
-            }
-        } catch (e) {
-            // Fallback to default font if Khmer font fails
-            console.warn('Khmer font failed, using fallback:', e);
-            doc.setFont('helvetica', style);
-            doc.setFontSize(size);
-            if (align === 'center') {
-                doc.text(text, x, y, { align: 'center' });
-            } else {
-                doc.text(text, x, y);
-            }
-        }
-    };
+// Load Khmer fonts from Google Fonts
+try {
+// Load Noto Sans Khmer fonts
+await Promise.all([
+fetch('https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Khmer/NotoSansKhmer-Regular.ttf')
+.then(response => response.arrayBuffer())
+.then(fontData => {
+const base64Font = btoa(String.fromCharCode(...new Uint8Array(fontData)));
+doc.addFileToVFS('NotoSansKhmer-Regular.ttf', base64Font);
+doc.addFont('NotoSansKhmer-Regular.ttf', 'NotoSansKhmer', 'normal');
+}),
+fetch('https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Khmer/NotoSansKhmer-Bold.ttf')
+.then(response => response.arrayBuffer())
+.then(fontData => {
+const base64Font = btoa(String.fromCharCode(...new Uint8Array(fontData)));
+doc.addFileToVFS('NotoSansKhmer-Bold.ttf', base64Font);
+doc.addFont('NotoSansKhmer-Bold.ttf', 'NotoSansKhmer', 'bold');
+})
+]);
+console.log('Khmer fonts loaded successfully');
+} catch (e) {
+console.error('Failed to load Khmer fonts:', e);
+// Continue with default font if Khmer fonts fail to load
+}
 
-    const addText = (text, x, y, size = 12, style = 'normal', align = 'left') => {
-        doc.setFont('helvetica', style);
-        doc.setFontSize(size);
-        if (align === 'center') {
-            doc.text(text, x, y, { align: 'center' });
-        } else {
-            doc.text(text, x, y);
-        }
-    };
+// Page dimensions
+const pageWidth = doc.internal.pageSize.getWidth();
+const pageHeight = doc.internal.pageSize.getHeight();
+const margin = 15;
+const contentWidth = pageWidth - (margin * 2);
 
-    const drawRoundedRect = (x, y, width, height, radius) => {
-        doc.roundedRect(x, y, width, height, radius, radius);
-    };
+// Helper functions - defined at the beginning
+const addKhmerText = (text, x, y, size = 12, style = 'normal', align = 'left') => {
+try {
+// Try to use Khmer font first
+doc.setFont('NotoSansKhmer', style);
+doc.setFontSize(size);
+if (align === 'center') {
+doc.text(text, x, y, { align: 'center' });
+} else {
+doc.text(text, x, y);
+}
+} catch (e) {
+// Fallback to default font if Khmer font fails
+console.warn('Khmer font failed, using fallback:', e);
+doc.setFont('helvetica', style);
+doc.setFontSize(size);
+if (align === 'center') {
+doc.text(text, x, y, { align: 'center' });
+} else {
+doc.text(text, x, y);
+}
+}
+};
 
-    // Custom colors
-    const primaryColor = [79, 70, 229]; // Indigo
-    const secondaryColor = [107, 114, 128]; // Gray
+const addText = (text, x, y, size = 12, style = 'normal', align = 'left') => {
+doc.setFont('helvetica', style);
+doc.setFontSize(size);
+if (align === 'center') {
+doc.text(text, x, y, { align: 'center' });
+} else {
+doc.text(text, x, y);
+}
+};
 
-    // Add header background
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, pageWidth, 60, 'F');
+const drawRoundedRect = (x, y, width, height, radius) => {
+doc.roundedRect(x, y, width, height, radius, radius);
+};
 
-    // Add logo (try to load, if fails use placeholder)
-    try {
-        doc.addImage('https://i.postimg.cc/FHBn0Fdf/di3-copy.png', 'PNG', margin, 10, 40, 40);
-    } catch (e) {
-        // If image fails to load, add a placeholder
-        doc.setFillColor(255, 255, 255);
-        doc.rect(margin, 10, 40, 40, 'F');
-        addText('LOGO', margin + 20, 30, 16, 'bold', 'center');
-    }
+// Custom colors
+const primaryColor = [79, 70, 229]; // Indigo
+const secondaryColor = [107, 114, 128]; // Gray
 
-    // Company name and report title
-    doc.setTextColor(255, 255, 255);
-    addKhmerText('របាយការណ៍អ្នកគ្រប់គ្រង', pageWidth / 2, 20, 20, 'bold', 'center');
-    addText('Admin Report', pageWidth / 2, 30, 14, 'normal', 'center');
-    addText('DI Learning Institute', pageWidth / 2, 40, 14, 'normal', 'center');
+// Add header background
+doc.setFillColor(...primaryColor);
+doc.rect(0, 0, pageWidth, 60, 'F');
 
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
+// Add logo (try to load, if fails use placeholder)
+try {
+doc.addImage('https://i.postimg.cc/FHBn0Fdf/di3-copy.png', 'PNG', margin, 10, 40, 40);
+} catch (e) {
+// If image fails to load, add a placeholder
+doc.setFillColor(255, 255, 255);
+doc.rect(margin, 10, 40, 40, 'F');
+addText('LOGO', margin + 20, 30, 16, 'bold', 'center');
+}
 
-    // Admin info section
-    addKhmerText('ព័ត៌មានអ្នកគ្រប់គ្រង', margin, 75, 16, 'bold');
-    
-    // Admin info table
-    doc.setDrawColor(200, 200, 200);
-    doc.setFillColor(248, 250, 252);
-    doc.rect(margin, 80, contentWidth, 8, 'F');
-    doc.rect(margin, 80, contentWidth, 8);
-    
-    doc.rect(margin, 88, contentWidth, 8, 'F');
-    doc.rect(margin, 88, contentWidth, 8);
-    
-    doc.rect(margin, 96, contentWidth, 8, 'F');
-    doc.rect(margin, 96, contentWidth, 8);
-    
-    doc.rect(margin, 104, contentWidth, 8, 'F');
-    doc.rect(margin, 104, contentWidth, 8);
+// Company name and report title
+doc.setTextColor(255, 255, 255);
+addKhmerText('របាយការណ៍អ្នកគ្រប់គ្រង', pageWidth / 2, 20, 20, 'bold', 'center');
+addText('Admin Report', pageWidth / 2, 30, 14, 'normal', 'center');
+addText('DI Learning Institute', pageWidth / 2, 40, 14, 'normal', 'center');
 
-    // Admin info content
-    addKhmerText('ឈ្មោះ:', margin + 2, 86, 10);
-    addText(admin.name, margin + 35, 86, 10, 'bold');
-    
-    addKhmerText('លេខសម្គាល់:', margin + 2, 94, 10);
-    addText(admin.id, margin + 35, 94, 10, 'bold');
-    
-    addKhmerText('កាលបរិច្ឆេទ:', margin + 2, 102, 10);
-    addText(new Date().toLocaleDateString('km-KH'), margin + 35, 102, 10);
-    
-    addKhmerText('ម៉ោង:', margin + 2, 110, 10);
-    addText(new Date().toLocaleTimeString('km-KH'), margin + 35, 110, 10);
+// Reset text color
+doc.setTextColor(0, 0, 0);
 
-    // Statistics section
-    let yPos = 125;
-    addKhmerText('ស្ថិតិ', margin, yPos, 16, 'bold');
-    yPos += 10;
+// Admin info section
+addKhmerText('ព័ត៌មានអ្នកគ្រប់គ្រង', margin, 75, 16, 'bold');
 
-    // Statistics cards
-    const stats = [
-        { label: 'ចំនួនរូបថតដែលបានបញ្ចូល', value: uploadLogs.length, color: [34, 197, 94] },
-        { label: 'ចំនួនរូបថតដែលបានលុប', value: deleteLogs.length, color: [239, 68, 68] },
-        { label: 'ចំនួននិស្សិតដែលមានរូបថត', value: uploadedStudents.length, color: [59, 130, 246] }
-    ];
+// Admin info table
+doc.setDrawColor(200, 200, 200);
+doc.setFillColor(248, 250, 252);
+doc.rect(margin, 80, contentWidth, 8, 'F');
+doc.rect(margin, 80, contentWidth, 8);
 
-    const cardWidth = contentWidth / 3 - 5;
-    stats.forEach((stat, index) => {
-        const xPos = margin + (index * (cardWidth + 5));
-        
-        // Card background
-        doc.setFillColor(...stat.color);
-        drawRoundedRect(xPos, yPos, cardWidth, 30, 3);
-        doc.roundedRect(xPos, yPos, cardWidth, 30, 3, 3, 'F');
-        
-        // Card content
-        doc.setTextColor(255, 255, 255);
-        addText(stat.value.toString(), xPos + cardWidth/2, yPos + 12, 18, 'bold', 'center');
-        doc.setFontSize(8);
-        addKhmerText(stat.label, xPos + cardWidth/2, yPos + 22, 8, 'normal', 'center');
-    });
+doc.rect(margin, 88, contentWidth, 8, 'F');
+doc.rect(margin, 88, contentWidth, 8);
 
-    doc.setTextColor(0, 0, 0);
-    yPos += 45;
+doc.rect(margin, 96, contentWidth, 8, 'F');
+doc.rect(margin, 96, contentWidth, 8);
 
-    // Student photos table
-    addKhmerText('បញ្ជីនិស្សិតដែលបានបញ្ចូលរូបថត', margin, yPos, 14, 'bold');
-    yPos += 10;
+doc.rect(margin, 104, contentWidth, 8, 'F');
+doc.rect(margin, 104, contentWidth, 8);
 
-    // Table headers
-    const tableHeaders = ['រូបភាព', 'លេខសម្គាល់', 'ឈ្មោះ', 'ជំនាញ', 'កាលបរិច្ឆេទ'];
-    const colWidths = [25, 25, 45, 45, 35];
-    const tableWidth = colWidths.reduce((a, b) => a + b, 0);
-    const tableStartX = (pageWidth - tableWidth) / 2;
+// Admin info content
+addKhmerText('ឈ្មោះ:', margin + 2, 86, 10);
+addText(admin.name, margin + 35, 86, 10, 'bold');
 
-    // Header row
-    doc.setFillColor(...primaryColor);
-    doc.rect(tableStartX, yPos, tableWidth, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    
-    let currentX = tableStartX;
-    tableHeaders.forEach((header, index) => {
-        doc.setFontSize(9);
-        addKhmerText(header, currentX + colWidths[index]/2, yPos + 6, 9, 'normal', 'center');
-        currentX += colWidths[index];
-    });
+addKhmerText('លេខសម្គាល់:', margin + 2, 94, 10);
+addText(admin.id, margin + 35, 94, 10, 'bold');
 
-    doc.setTextColor(0, 0, 0);
-    yPos += 10;
+addKhmerText('កាលបរិច្ឆេទ:', margin + 2, 102, 10);
+addText(new Date().toLocaleDateString('km-KH'), margin + 35, 102, 10);
 
-    // Table rows
-    for (let i = 0; i < uploadedStudents.length; i++) {
-        const student = uploadedStudents[i];
-        const studentLog = adminLogs.find(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
-        
-        // Alternate row colors
-        if (i % 2 === 0) {
-            doc.setFillColor(248, 250, 252);
-            doc.rect(tableStartX, yPos, tableWidth, 25, 'F');
-        }
-        
-        // Row border
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(tableStartX, yPos, tableWidth, 25);
-        
-        currentX = tableStartX;
-        
-        // Photo column
-        try {
-            if (student['រូបថត'] && student['រូបថត'] !== 'n/a') {
-                doc.addImage(student['រូបថត'], 'JPEG', currentX + 2.5, yPos + 2.5, 20, 20);
-            } else {
-                doc.setFillColor(200, 200, 200);
-                doc.rect(currentX + 2.5, yPos + 2.5, 20, 20, 'F');
-                addText('No Photo', currentX + 12.5, yPos + 12.5, 8, 'normal', 'center');
-            }
-        } catch (e) {
-            doc.setFillColor(200, 200, 200);
-            doc.rect(currentX + 2.5, yPos + 2.5, 20, 20, 'F');
-        }
-        currentX += colWidths[0];
-        
-        // ID column
-        addText(student.id, currentX + colWidths[1]/2, yPos + 15, 10, 'normal', 'center');
-        currentX += colWidths[1];
-        
-        // Name column
-        doc.setFontSize(9);
-        const name = student['ឈ្មោះ'] || 'N/A';
-        const splitName = doc.splitTextToSize(name, colWidths[2] - 4);
-        splitName.forEach((line, index) => {
-            if (yPos + 8 + (index * 5) < yPos + 25) {
-                doc.text(line, currentX + 2, yPos + 8 + (index * 5));
-            }
-        });
-        currentX += colWidths[2];
-        
-        // Major column
-        const major = student['ជំនាញ'] || 'N/A';
-        const splitMajor = doc.splitTextToSize(major, colWidths[3] - 4);
-        splitMajor.forEach((line, index) => {
-            if (yPos + 8 + (index * 5) < yPos + 25) {
-                doc.text(line, currentX + 2, yPos + 8 + (index * 5));
-            }
-        });
-        currentX += colWidths[3];
-        
-        // Date column
-        doc.setFontSize(8);
-        if (studentLog && studentLog.timestamp) {
-            const date = new Date(studentLog.timestamp);
-            addText(date.toLocaleDateString('km-KH'), currentX + colWidths[4]/2, yPos + 15, 8, 'normal', 'center');
-        } else {
-            addText('N/A', currentX + colWidths[4]/2, yPos + 15, 8, 'normal', 'center');
-        }
-        
-        yPos += 25;
-        
-        // Check if we need a new page
-        if (yPos > pageHeight - 40) {
-            doc.addPage();
-            yPos = 20;
-            
-            // Add header to new page
-            doc.setFillColor(...primaryColor);
-            doc.rect(0, 0, pageWidth, 20, 'F');
-            doc.setTextColor(255, 255, 255);
-            addKhmerText('បន្តទំព័របន្ទាប់', pageWidth / 2, 13, 12, 'bold', 'center');
-            doc.setTextColor(0, 0, 0);
-        }
-    }
+addKhmerText('ម៉ោង:', margin + 2, 110, 10);
+addText(new Date().toLocaleTimeString('km-KH'), margin + 35, 110, 10);
 
-    // Footer
-    const footerY = pageHeight - 20;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, footerY, pageWidth - margin, footerY);
-    
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    addText(`ទំព័រ ${doc.internal.getNumberOfPages()}`, pageWidth / 2, footerY + 10, 8, 'normal', 'center');
-    addKhmerText('© 2024 DI Learning Institute - រក្សាសិទ្ធិគ្រប់យ៉ាង', pageWidth / 2, footerY + 15, 8, 'normal', 'center');
+// Statistics section
+let yPos = 125;
+addKhmerText('ស្ថិតិ', margin, yPos, 16, 'bold');
+yPos += 10;
 
-    // Save the PDF
-    doc.save(`admin_${adminId}_report_${Date.now()}.pdf`);
-    showAlert('របាយការណ៍ត្រូវបាននាំចេញដោយជោគជ័យ!');
+// Statistics cards
+const stats = [
+{ label: 'ចំនួនរូបថតដែលបានបញ្ចូល', value: uploadLogs.length, color: [34, 197, 94] },
+{ label: 'ចំនួនរូបថតដែលបានលុប', value: deleteLogs.length, color: [239, 68, 68] },
+{ label: 'ចំនួននិស្សិតដែលមានរូបថត', value: uploadedStudents.length, color: [59, 130, 246] }
+];
+
+const cardWidth = contentWidth / 3 - 5;
+stats.forEach((stat, index) => {
+const xPos = margin + (index * (cardWidth + 5));
+
+// Card background
+doc.setFillColor(...stat.color);
+drawRoundedRect(xPos, yPos, cardWidth, 30, 3);
+doc.roundedRect(xPos, yPos, cardWidth, 30, 3, 3, 'F');
+
+// Card content
+doc.setTextColor(255, 255, 255);
+addText(stat.value.toString(), xPos + cardWidth/2, yPos + 12, 18, 'bold', 'center');
+doc.setFontSize(8);
+addKhmerText(stat.label, xPos + cardWidth/2, yPos + 22, 8, 'normal', 'center');
+});
+
+doc.setTextColor(0, 0, 0);
+yPos += 45;
+
+// Student photos table
+addKhmerText('បញ្ជីនិស្សិតដែលបានបញ្ចូលរូបថត', margin, yPos, 14, 'bold');
+yPos += 10;
+
+// Table headers
+const tableHeaders = ['រូបភាព', 'លេខសម្គាល់', 'ឈ្មោះ', 'ជំនាញ', 'កាលបរិច្ឆេទ'];
+const colWidths = [25, 25, 45, 45, 35];
+const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+const tableStartX = (pageWidth - tableWidth) / 2;
+
+// Header row
+doc.setFillColor(...primaryColor);
+doc.rect(tableStartX, yPos, tableWidth, 10, 'F');
+doc.setTextColor(255, 255, 255);
+
+let currentX = tableStartX;
+tableHeaders.forEach((header, index) => {
+doc.setFontSize(9);
+addKhmerText(header, currentX + colWidths[index]/2, yPos + 6, 9, 'normal', 'center');
+currentX += colWidths[index];
+});
+
+doc.setTextColor(0, 0, 0);
+yPos += 10;
+
+// Table rows
+for (let i = 0; i < uploadedStudents.length; i++) {
+const student = uploadedStudents[i];
+const studentLog = adminLogs.find(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
+
+// Alternate row colors
+if (i % 2 === 0) {
+doc.setFillColor(248, 250, 252);
+doc.rect(tableStartX, yPos, tableWidth, 25, 'F');
+}
+
+// Row border
+doc.setDrawColor(200, 200, 200);
+doc.rect(tableStartX, yPos, tableWidth, 25);
+
+currentX = tableStartX;
+
+// Photo column
+try {
+if (student['រូបថត'] && student['រូបថត'] !== 'n/a') {
+doc.addImage(student['រូបថត'], 'JPEG', currentX + 2.5, yPos + 2.5, 20, 20);
+} else {
+doc.setFillColor(200, 200, 200);
+doc.rect(currentX + 2.5, yPos + 2.5, 20, 20, 'F');
+addText('No Photo', currentX + 12.5, yPos + 12.5, 8, 'normal', 'center');
+}
+} catch (e) {
+doc.setFillColor(200, 200, 200);
+doc.rect(currentX + 2.5, yPos + 2.5, 20, 20, 'F');
+}
+currentX += colWidths[0];
+
+// ID column
+addText(student.id, currentX + colWidths[1]/2, yPos + 15, 10, 'normal', 'center');
+currentX += colWidths[1];
+
+// Name column
+doc.setFontSize(9);
+const name = student['ឈ្មោះ'] || 'N/A';
+const splitName = doc.splitTextToSize(name, colWidths[2] - 4);
+splitName.forEach((line, index) => {
+if (yPos + 8 + (index * 5) < yPos + 25) {
+doc.text(line, currentX + 2, yPos + 8 + (index * 5));
+}
+});
+currentX += colWidths[2];
+
+// Major column
+const major = student['ជំនាញ'] || 'N/A';
+const splitMajor = doc.splitTextToSize(major, colWidths[3] - 4);
+splitMajor.forEach((line, index) => {
+if (yPos + 8 + (index * 5) < yPos + 25) {
+doc.text(line, currentX + 2, yPos + 8 + (index * 5));
+}
+});
+currentX += colWidths[3];
+
+// Date column
+doc.setFontSize(8);
+if (studentLog && studentLog.timestamp) {
+const date = new Date(studentLog.timestamp);
+addText(date.toLocaleDateString('km-KH'), currentX + colWidths[4]/2, yPos + 15, 8, 'normal', 'center');
+} else {
+addText('N/A', currentX + colWidths[4]/2, yPos + 15, 8, 'normal', 'center');
+}
+
+yPos += 25;
+
+// Check if we need a new page
+if (yPos > pageHeight - 40) {
+doc.addPage();
+yPos = 20;
+
+// Add header to new page
+doc.setFillColor(...primaryColor);
+doc.rect(0, 0, pageWidth, 20, 'F');
+doc.setTextColor(255, 255, 255);
+addKhmerText('បន្តទំព័របន្ទាប់', pageWidth / 2, 13, 12, 'bold', 'center');
+doc.setTextColor(0, 0, 0);
+}
+}
+
+// Footer
+const footerY = pageHeight - 20;
+doc.setDrawColor(200, 200, 200);
+doc.line(margin, footerY, pageWidth - margin, footerY);
+
+doc.setFontSize(8);
+doc.setTextColor(100, 100, 100);
+addText(`ទំព័រ ${doc.internal.getNumberOfPages()}`, pageWidth / 2, footerY + 10, 8, 'normal', 'center');
+addKhmerText('© 2024 DI Learning Institute - រក្សាសិទ្ធិគ្រប់យ៉ាង', pageWidth / 2, footerY + 15, 8, 'normal', 'center');
+
+// Save the PDF
+doc.save(`admin_${adminId}_report_${Date.now()}.pdf`);
+showAlert('របាយការណ៍ត្រូវបាននាំចេញដោយជោគជ័យ!');
+};
+
+const handleExportAdminDataExcel = async (adminId) => {
+const admin = adminList.find(a => a.id === adminId);
+if (!admin) return;
+
+// Get all logs for this admin
+const adminLogs = allAdminLogs.filter(log => log.adminId === adminId);
+
+// Get all photos uploaded by this admin
+const uploadLogs = adminLogs.filter(log => log.action === 'UPLOAD_PHOTO');
+const deleteLogs = adminLogs.filter(log => log.action === 'DELETE_PHOTO');
+
+// Get all students with photos uploaded by this admin
+const uploadedStudents = allStudents.filter(student => {
+const studentUploadLogs = adminLogs.filter(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
+return studentUploadLogs.length > 0;
+});
+
+// Create workbook
+const wb = XLSX.utils.book_new();
+
+// Summary Sheet
+const summaryData = [
+['Admin Report Summary'],
+[],
+['Administrator Information'],
+['Name:', admin.name],
+['Admin ID:', admin.id],
+['Report Date:', new Date().toLocaleDateString()],
+['Report Time:', new Date().toLocaleTimeString()],
+[],
+['Statistics'],
+['Total Photos Uploaded:', uploadLogs.length],
+['Total Photos Deleted:', deleteLogs.length],
+['Students with Photos:', uploadedStudents.length]
+];
+
+const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+
+// Style summary sheet
+wsSummary['A1'].s = {
+font: { sz: 16, bold: true },
+alignment: { horizontal: 'center' }
+};
+
+wsSummary['A3'].s = {
+font: { sz: 14, bold: true }
+};
+
+XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+// Students Sheet
+const studentsData = [
+['Student ID', 'Name', 'Major', 'Photo URL', 'Upload Date', 'Upload Time']
+];
+
+uploadedStudents.forEach(student => {
+const studentLog = adminLogs.find(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
+const uploadDate = studentLog && studentLog.timestamp ? new Date(studentLog.timestamp) : null;
+
+studentsData.push([
+student.id,
+student['ឈ្មោះ'] || 'N/A',
+student['ជំនាញ'] || 'N/A',
+student['រូបថត'] || 'N/A',
+uploadDate ? uploadDate.toLocaleDateString() : 'N/A',
+uploadDate ? uploadDate.toLocaleTimeString() : 'N/A'
+]);
+});
+
+const wsStudents = XLSX.utils.aoa_to_sheet(studentsData);
+
+// Style students sheet header
+const headerRange = XLSX.utils.decode_range(wsStudents['!ref']);
+for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+wsStudents[cellAddress].s = {
+font: { sz: 12, bold: true },
+fill: { fgColor: { rgb: "4F46E5" } },
+alignment: { horizontal: 'center' }
+};
+}
+
+// Auto-size columns
+const colWidths = [
+{ wch: 15 }, // Student ID
+{ wch: 30 }, // Name
+{ wch: 25 }, // Major
+{ wch: 50 }, // Photo URL
+{ wch: 15 }, // Upload Date
+{ wch: 15 }  // Upload Time
+];
+wsStudents['!cols'] = colWidths;
+
+XLSX.utils.book_append_sheet(wb, wsStudents, 'Students');
+
+// Activity Log Sheet
+const activityData = [
+['Date', 'Time', 'Action', 'Student ID', 'Student Name', 'Details']
+];
+
+adminLogs.forEach(log => {
+const student = allStudents.find(s => s.id === log.studentId);
+const logDate = log.timestamp ? new Date(log.timestamp) : null;
+const actionText = log.action === 'UPLOAD_PHOTO' ? 'Upload Photo' :
+log.action === 'DELETE_PHOTO' ? 'Delete Photo' :
+log.action === 'BATCH_DELETE_PHOTOS' ? `Batch Delete ${log.count} Photos` :
+log.action;
+
+activityData.push([
+logDate ? logDate.toLocaleDateString() : 'N/A',
+logDate ? logDate.toLocaleTimeString() : 'N/A',
+actionText,
+log.studentId || 'N/A',
+student ? student['ឈ្មោះ'] : 'N/A',
+log.details || ''
+]);
+});
+
+const wsActivity = XLSX.utils.aoa_to_sheet(activityData);
+
+// Style activity sheet header
+const activityRange = XLSX.utils.decode_range(wsActivity['!ref']);
+for (let col = activityRange.s.c; col <= activityRange.e.c; col++) {
+const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+wsActivity[cellAddress].s = {
+font: { sz: 12, bold: true },
+fill: { fgColor: { rgb: "4F46E5" } },
+alignment: { horizontal: 'center' }
+};
+}
+
+// Auto-size columns for activity sheet
+wsActivity['!cols'] = [
+{ wch: 15 }, // Date
+{ wch: 15 }, // Time
+{ wch: 20 }, // Action
+{ wch: 15 }, // Student ID
+{ wch: 30 }, // Student Name
+{ wch: 30 }  // Details
+];
+
+XLSX.utils.book_append_sheet(wb, wsActivity, 'Activity Log');
+
+// Save Excel file
+XLSX.writeFile(wb, `admin_${adminId}_report_${Date.now()}.xlsx`);
+showAlert('Admin data exported to Excel successfully!');
 };
 
 const handleScroll = (e) => {
@@ -715,6 +861,7 @@ onAddAdmin={() => setAddAdminState({ isOpen: true, adminId: '', adminName: '' })
 onViewAdminDetails={handleViewAdminDetails}
 onDeletePhoto={handleDeletePhoto}
 onExportAdminData={handleExportAdminData}
+onExportAdminDataExcel={handleExportAdminDataExcel}
 />
 ) : activeTab === 'delete' ? (
 <DeleteMode
@@ -880,6 +1027,7 @@ allStudents={allStudents}
 allAdminLogs={allAdminLogs}
 onClose={() => setSelectedAdminDetails(null)}
 onExport={() => handleExportAdminData(selectedAdminDetails.id)}
+onExportExcel={() => handleExportAdminDataExcel(selectedAdminDetails.id)}
 />
 )}
 
@@ -1356,7 +1504,7 @@ className="w-7 h-7 rounded-full bg-red-50 text-red-500 flex items-center justify
 );
 };
 
-const AdminDashboard = ({ admin, allStudents, adminLogs, adminList, capturedCount, isSuperAdmin, adminCaptureStats, onBlockAdmin, onAddAdmin, onViewAdminDetails, onDeletePhoto, onExportAdminData }) => {
+const AdminDashboard = ({ admin, allStudents, adminLogs, adminList, capturedCount, isSuperAdmin, adminCaptureStats, onBlockAdmin, onAddAdmin, onViewAdminDetails, onDeletePhoto, onExportAdminData, onExportAdminDataExcel }) => {
 // Stats calculation
 const totalStudents = allStudents.length;
 const completionRate = Math.round((capturedCount / totalStudents) * 100) || 0;
@@ -1415,7 +1563,7 @@ return (
 <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-3 border-b border-slate-100">
 <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
 <BarChart3 className="h-4 w-4 text-indigo-600" />
-ស្ថានភាពអ្នកគ្រប់គ្រង
+ស្ថនភាពអ្នកគ្រប់គ្រង
 </h3>
 </div>
 
@@ -1459,6 +1607,16 @@ title="Export as PDF"
 >
 <FileText className="h-4 w-4" />
 </button>
+<button
+onClick={(e) => {
+e.stopPropagation();
+onExportAdminDataExcel(stat.adminId);
+}}
+className="px-2 py-1 bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors"
+title="Export as Excel"
+>
+<Download className="h-4 w-4" />
+</button>
 </div>
 </div>
 ))}
@@ -1500,9 +1658,9 @@ admin.isBlocked
 ? 'bg-red-100 text-red-700'
 : 'bg-green-100 text-green-700'
 }`}>
-{admin.isBlocked ? 'បានបិទគណនី' : 'Active'}
+{admin.isBlocked ? 'បិទ' : 'សកម្ម'}
 </span>
-{admin.id !== '9090' && (
+{admin.id !== '250' && (
 <button
 onClick={() => onBlockAdmin(admin.id, admin.isBlocked)}
 className={`text-xs font-medium hover:underline flex items-center gap-1 ${
@@ -1512,12 +1670,12 @@ admin.isBlocked ? 'text-green-600' : 'text-red-600'
 {admin.isBlocked ? (
 <>
 <Unlock className="h-3 w-3" />
-Unblock
+អនុញ្ញាត
 </>
 ) : (
 <>
 <Lock className="h-3 w-3" />
-block
+ដោះទ្រា
 </>
 )}
 </button>
@@ -1585,6 +1743,7 @@ className="w-7 h-7 rounded-full bg-red-50 text-red-500 flex items-center justify
 );
 };
 
+// Updated CameraModal with simplified square viewfinder
 const CameraModal = ({ onClose, onCapture, studentName }) => {
 const videoRef = useRef(null);
 const [stream, setStream] = useState(null);
@@ -1615,7 +1774,17 @@ ctx.translate(size, 0);
 ctx.scale(-1, 1);
 }
 
-ctx.drawImage(video, (video.videoWidth - size) / 2, (video.videoHeight - size) / 2, size, size, 0, 0, size, size);
+// Calculate the square dimensions (75% of the smaller dimension)
+const squareSize = size * 0.75;
+const offset = (size - squareSize) / 2;
+
+// Draw only the square area from the video
+ctx.drawImage(
+video,
+offset, offset, squareSize, squareSize,  // Source rectangle
+0, 0, squareSize, squareSize      // Destination rectangle
+);
+
 canvas.toBlob(blob => onCapture(blob), 'image/jpeg', 0.85);
 };
 
@@ -1638,24 +1807,9 @@ playsInline
 className={`absolute w-full h-full object-cover transition-transform duration-300 ${isMirrored ? 'scale-x-[-1]' : ''}`}
 />
 
-{/* Square viewfinder with white lines */}
+{/* Simplified square viewfinder */}
 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-<div className="w-[75%] aspect-square relative">
-{/* White lines at corners */}
-<div className="absolute top-0 left-0 w-full h-0.5 bg-white"></div>
-<div className="absolute top-0 right-0 w-full h-0.5 bg-white"></div>
-<div className="absolute bottom-0 left-0 w-full h-0.5 bg-white"></div>
-<div className="absolute bottom-0 right-0 w-full h-0.5 bg-white"></div>
-
-{/* White lines at middle */}
-<div className="absolute top-1/2 left-1/2 w-full h-0.5 bg-white transform rotate-45"></div>
-<div className="absolute top-1/2 right-1/2 w-full h-0.5 bg-white transform -rotate-45"></div>
-
-{/* White lines at center */}
-<div className="absolute top-1/2 left-1/2 w-full h-0.5 bg-white"></div>
-<div className="absolute top-1/2 right-1/2 w-full h-0.5 bg-white transform rotate-90"></div>
-<div className="absolute bottom-1/2 left-1/2 w-full h-0.5 bg-white transform -rotate-90"></div>
-</div>
+<div className="w-[75%] aspect-square border-2 border-white"></div>
 </div>
 </div>
 
@@ -1713,7 +1867,7 @@ return (
 );
 };
 
-const AdminDetailsModal = ({ admin, allStudents, allAdminLogs, onClose, onExport }) => {
+const AdminDetailsModal = ({ admin, allStudents, allAdminLogs, onClose, onExport, onExportExcel }) => {
 // Get all logs for this admin
 const adminLogs = allAdminLogs.filter(log => log.adminId === admin.id);
 
@@ -1810,7 +1964,14 @@ onClick={onExport}
 className="flex-1 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
 >
 <FileText className="h-4 w-4" />
-Export as PDF
+Export PDF
+</button>
+<button
+onClick={onExportExcel}
+className="flex-1 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+>
+<Download className="h-4 w-4" />
+Export Excel
 </button>
 </div>
 </div>
@@ -1916,4 +2077,3 @@ if (rootElement) {
 const root = createRoot(rootElement);
 root.render(<App />);
 }
- 
