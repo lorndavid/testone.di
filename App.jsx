@@ -9,7 +9,7 @@ CheckCircle2, X, RefreshCw, ChevronUp, Users, Image as ImageIcon,
 AlertTriangle, History, FlipHorizontal, Filter, ArrowUpDown, LayoutGrid,
 Grid3X3, List, Eye, EyeOff, MoreVertical, Clock, Database, Shield, Folder,
 Activity, Calendar, UserCheck, CameraIcon, Image as ImageIcon2, Info,
-UserPlus, UserX, Lock, Unlock, BarChart3, Download, FileText
+UserPlus, UserX, Lock, Unlock, BarChart3, Download, FileText, SortAsc, SortDesc
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -66,6 +66,11 @@ const [selectedAdminDetails, setSelectedAdminDetails] = useState(null);
 const [deleteViewMode, setDeleteViewMode] = useState('grid');
 const [selectedImages, setSelectedImages] = useState(new Set());
 const [showBatchActions, setShowBatchActions] = useState(false);
+
+// Admin details modal states
+const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+const [filterType, setFilterType] = useState('all'); // 'all', 'upload', 'delete'
+const [dateFilter, setDateFilter] = useState('all'); // 'all', 'today', 'week', 'month'
 
 // --- Effects ---
 useEffect(() => {
@@ -1240,8 +1245,7 @@ return (
 
 <div className="flex items-center">
 {mode === 'home' && !hasImage && (
-<button onClick={onCamera} className="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
-<Camera className="h-4 w-4" />
+<button onClick={onCamera} className="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm"><Camera className="h-4 w-4" />
 </button>
 )}
 {mode === 'pending' && (
@@ -1743,11 +1747,11 @@ className="w-7 h-7 rounded-full bg-red-50 text-red-500 flex items-center justify
 );
 };
 
-// Updated CameraModal with simplified square viewfinder
+// Updated CameraModal with simplified square viewfinder and no mirroring by default
 const CameraModal = ({ onClose, onCapture, studentName }) => {
 const videoRef = useRef(null);
 const [stream, setStream] = useState(null);
-const [isMirrored, setIsMirrored] = useState(true);
+const [isMirrored, setIsMirrored] = useState(false); // Changed to false by default
 
 useEffect(() => {
 navigator.mediaDevices.getUserMedia({
@@ -1834,19 +1838,41 @@ className="w-16 h-16 rounded-full bg-white border-4 border-zinc-200 flex items-c
 );
 };
 
+// Updated PreviewModal with full-screen image display
 const PreviewModal = ({ blob, studentName, isUploading, onRetake, onConfirm, onCancel }) => {
 const url = useMemo(() => URL.createObjectURL(blob), [blob]);
+const [isFullscreen, setIsFullscreen] = useState(false);
+
 return (
 <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-scale-in">
-<div className="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-<div className="aspect-square bg-black relative">
-<img src={url} alt="Preview" className="w-full h-full object-cover" />
+<div className={`bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 ${
+isFullscreen ? 'w-full h-full max-w-none max-h-none rounded-none' : 'w-full max-w-md max-h-[90vh]'
+}`}>
+<div className={`relative bg-black ${isFullscreen ? 'flex-1' : 'aspect-square'}`}>
+<img 
+    src={url} 
+    alt="Preview" 
+    className={`w-full h-full object-contain cursor-pointer transition-transform duration-300 ${isFullscreen ? '' : 'hover:scale-105'}`}
+    onClick={() => setIsFullscreen(!isFullscreen)}
+/>
 {!isUploading && (
-<button onClick={onCancel} className="absolute top-3 right-3 w-9 h-9 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md">
-<X className="h-4 w-4 text-slate-600" />
+<button 
+    onClick={onCancel} 
+    className="absolute top-3 right-3 w-9 h-9 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 transition-colors z-10"
+>
+<X className="h-4 w-4" />
+</button>
+)}
+{!isFullscreen && (
+<button
+    onClick={() => setIsFullscreen(true)}
+    className="absolute top-3 left-3 w-9 h-9 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 transition-colors z-10"
+>
+<Expand className="h-4 w-4" />
 </button>
 )}
 </div>
+{!isFullscreen && (
 <div className="p-4 space-y-4 bg-white">
 <div className="text-center">
 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">បញ្ជាក់ការបញ្ចូល</p>
@@ -1862,24 +1888,104 @@ return (
 </button>
 </div>
 </div>
+)}
+{isFullscreen && (
+<div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+<button onClick={onRetake} disabled={isUploading} className="px-4 py-2 bg-black/50 text-white rounded-lg backdrop-blur-md hover:bg-black/70 transition-colors text-sm">
+ថតម្តង
+</button>
+<button onClick={onConfirm} disabled={isUploading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
+{isUploading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+{isUploading ? "កំពុងបញ្ចូល..." : "បញ្ជាក់"}
+</button>
+</div>
+)}
 </div>
 </div>
 );
 };
 
+// Updated AdminDetailsModal with sorting and filtering options
 const AdminDetailsModal = ({ admin, allStudents, allAdminLogs, onClose, onExport, onExportExcel }) => {
+// State for sorting and filtering
+const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+const [filterType, setFilterType] = useState('all'); // 'all', 'upload', 'delete'
+const [dateFilter, setDateFilter] = useState('all'); // 'all', 'today', 'week', 'month'
+
 // Get all logs for this admin
-const adminLogs = allAdminLogs.filter(log => log.adminId === admin.id);
+const adminLogs = useMemo(() => {
+let logs = allAdminLogs.filter(log => log.adminId === admin.id);
+  
+  // Filter by action type
+  if (filterType !== 'all') {
+    logs = logs.filter(log => 
+      filterType === 'upload' ? log.action === 'UPLOAD_PHOTO' : log.action === 'DELETE_PHOTO'
+    );
+  }
+  
+  // Filter by date
+  const now = new Date();
+  if (dateFilter === 'today') {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    logs = logs.filter(log => {
+      if (!log.timestamp) return false;
+      const logDate = new Date(log.timestamp);
+      return logDate >= today;
+    });
+  } else if (dateFilter === 'week') {
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    logs = logs.filter(log => {
+      if (!log.timestamp) return false;
+      const logDate = new Date(log.timestamp);
+      return logDate >= weekAgo;
+    });
+  } else if (dateFilter === 'month') {
+    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    logs = logs.filter(log => {
+      if (!log.timestamp) return false;
+      const logDate = new Date(log.timestamp);
+      return logDate >= monthAgo;
+    });
+  }
+  
+  // Sort by timestamp
+  logs.sort((a, b) => {
+    if (!a.timestamp) return 1;
+    if (!b.timestamp) return -1;
+    return sortOrder === 'asc' 
+      ? a.timestamp - b.timestamp 
+      : b.timestamp - a.timestamp;
+  });
+  
+  return logs;
+}, [allAdminLogs, admin.id, filterType, dateFilter, sortOrder]);
 
 // Get all photos uploaded by this admin
 const uploadLogs = adminLogs.filter(log => log.action === 'UPLOAD_PHOTO');
 const deleteLogs = adminLogs.filter(log => log.action === 'DELETE_PHOTO');
 
 // Get all students with photos uploaded by this admin
-const uploadedStudents = allStudents.filter(student => {
-const studentUploadLogs = adminLogs.filter(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
-return studentUploadLogs.length > 0;
-});
+const uploadedStudents = useMemo(() => {
+  const students = allStudents.filter(student => {
+    const studentUploadLogs = adminLogs.filter(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
+    return studentUploadLogs.length > 0;
+  });
+  
+  // Sort by upload date
+  students.sort((a, b) => {
+    const aLog = adminLogs.find(log => log.studentId === a.id && log.action === 'UPLOAD_PHOTO');
+    const bLog = adminLogs.find(log => log.studentId === b.id && log.action === 'UPLOAD_PHOTO');
+    
+    if (!aLog || !aLog.timestamp) return 1;
+    if (!bLog || !bLog.timestamp) return -1;
+    
+    return sortOrder === 'asc' 
+      ? aLog.timestamp - bLog.timestamp 
+      : bLog.timestamp - aLog.timestamp;
+  });
+  
+  return students;
+}, [allStudents, adminLogs, sortOrder]);
 
 // Function to format timestamp
 const formatTimestamp = (timestamp) => {
@@ -1936,7 +2042,53 @@ return (
 </div>
 
 <div className="bg-slate-50 rounded-lg p-3">
-<h4 className="font-medium text-slate-800 mb-2">Recent Activities</h4>
+<div className="flex items-center justify-between mb-2">
+<h4 className="font-medium text-slate-800">Recent Activities</h4>
+<div className="flex gap-1">
+{/* Sort button */}
+<button
+onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+className="p-1 bg-white rounded text-slate-500 hover:bg-slate-100 transition-colors"
+title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+>
+{sortOrder === 'asc' ? <SortAsc className="h-3 w-3" /> : <SortDesc className="h-3 w-3" />}
+</button>
+{/* Filter button */}
+<div className="relative">
+<button
+className="p-1 bg-white rounded text-slate-500 hover:bg-slate-100 transition-colors"
+title="Filter"
+>
+<Filter className="h-3 w-3" />
+</button>
+</div>
+</div>
+</div>
+
+{/* Filter options */}
+<div className="flex gap-2 mb-2">
+<select
+value={filterType}
+onChange={(e) => setFilterType(e.target.value)}
+className="text-xs bg-white border border-slate-200 rounded px-2 py-1"
+>
+<option value="all">All Actions</option>
+<option value="upload">Uploads Only</option>
+<option value="delete">Deletes Only</option>
+</select>
+
+<select
+value={dateFilter}
+onChange={(e) => setDateFilter(e.target.value)}
+className="text-xs bg-white border border-slate-200 rounded px-2 py-1"
+>
+<option value="all">All Time</option>
+<option value="today">Today</option>
+<option value="week">This Week</option>
+<option value="month">This Month</option>
+</select>
+</div>
+
 <div className="space-y-2 max-h-40 overflow-y-auto">
 {adminLogs.slice(0, 10).map((log) => {
 const student = allStudents.find(s => s.id === log.studentId);
