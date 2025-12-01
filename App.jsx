@@ -825,8 +825,8 @@ const SystemPolicyModal = ({ onAccept, onReject }) => (
         <h2 className="text-lg font-bold text-slate-800 tittle">
           គោលការណ៍ប្រើប្រាស់ប្រព័ន្ធ
         </h2>
-        <p className="text-xs text-slate-500 mt-1 font-medium">
-          សូមអាន និងយល់ព្រមចំពោះគោលការណ៍ខាងក្រោម មុននឹងបន្តប្រើប្រាស់ប្រព័ន្ធ។
+        <p className="text-s text-slate-500 mt-1 font-medium">
+          សូមអានគោលការណ៍ខាងក្រោមមុននឹងបន្តប្រើប្រាស់ប្រព័ន្ធ។
         </p>
       </div>
 
@@ -859,7 +859,7 @@ const SystemPolicyModal = ({ onAccept, onReject }) => (
 const PolicyItem = ({ text }) => (
   <div className="flex items-start gap-3">
     <div className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></div>
-    <p className="text-xs text-slate-600 leading-relaxed font-medium">{text}</p>
+    <p className="text-s text-slate-600 leading-relaxed font-medium">{text}</p>
   </div>
 );
 
