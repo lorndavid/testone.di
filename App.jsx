@@ -1612,19 +1612,21 @@ const AdminDashboard = ({
   );
 };
 
-// ... CameraModal, PreviewModal, AdminDetailsModal, AlertToast, ConfirmModal, BottomNav code remains the same ...
-
+// --- CameraModal Component ---
 const CameraModal = ({ onClose, onCapture, studentName }) => {
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [isMirrored, setIsMirrored] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
   useEffect(() => {
+    // Request camera access
     navigator.mediaDevices
       .getUserMedia({
         video: {
-          facingMode: "environment",
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
+          facingMode: "environment", // Default to back camera
+          width: { ideal: 1920 },    // High res ideal, but browser will adapt
+          height: { ideal: 1080 },
         },
         audio: false,
       })
@@ -1633,67 +1635,91 @@ const CameraModal = ({ onClose, onCapture, studentName }) => {
         if (videoRef.current) {
           videoRef.current.srcObject = s;
         }
+        setIsInitializing(false);
       })
       .catch((err) => {
-        console.error(err);
-        alert("មិនអាចចូលដំណើរការកាមេរ៉ាបានទេ");
+        console.error("Camera Error:", err);
+        alert("មិនអាចចូលដំណើរការកាមេរ៉ាបានទេ (Cannot access camera)");
+        onClose();
       });
+
     return () => {
-      if (stream) stream.getTracks().forEach((t) => t.stop());
+      // Cleanup stream on unmount
+      if (stream) {
+        stream.getTracks().forEach((t) => t.stop());
+      }
     };
   }, []);
+
   const takePicture = () => {
     if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
+
     const video = videoRef.current;
-    canvas.width = 400;
-    canvas.height = 500;
+    const canvas = document.createElement("canvas");
+    
+    // 1. Determine the size of the square crop based on the shortest video dimension
+    // This ensures we get the maximum resolution square possible from the center
+    const size = Math.min(video.videoWidth, video.videoHeight);
+    
+    // 2. Set canvas to a square
+    canvas.width = size;
+    canvas.height = size;
+    
     const ctx = canvas.getContext("2d");
+
+    // 3. Handle Mirroring (Horizontal flip)
     if (isMirrored) {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
-    const videoRatio = video.videoWidth / video.videoHeight;
-    const targetRatio = canvas.width / canvas.height;
-    let sWidth, sHeight, sX, sY;
-    if (videoRatio > targetRatio) {
-      sHeight = video.videoHeight;
-      sWidth = sHeight * targetRatio;
-      sX = (video.videoWidth - sWidth) / 2;
-      sY = 0;
-    } else {
-      sWidth = video.videoWidth;
-      sHeight = sWidth / targetRatio;
-      sX = 0;
-      sY = (video.videoHeight - sHeight) / 2;
-    }
+
+    // 4. Calculate cropping coordinates to get the exact center square
+    // This logic matches the visual "square overlay" in the UI
+    const startX = (video.videoWidth - size) / 2;
+    const startY = (video.videoHeight - size) / 2;
+
+    // 5. Draw the cropped image
+    // drawImage(source, sourceX, sourceY, sourceW, sourceH, destX, destY, destW, destH)
     ctx.drawImage(
       video,
-      sX,
-      sY,
-      sWidth,
-      sHeight,
+      startX,
+      startY,
+      size,
+      size,
       0,
       0,
       canvas.width,
       canvas.height
     );
-    canvas.toBlob((blob) => onCapture(blob), "image/jpeg", 0.9);
+
+    // 6. Convert to blob
+    canvas.toBlob((blob) => onCapture(blob), "image/jpeg", 0.95);
   };
+
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col animate-in fade-in zoom-in duration-200">
-      <div className="flex justify-between items-center p-4 text-white z-10">
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 text-white z-20 absolute top-0 w-full">
         <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-          <p className="font-bold text-sm">{studentName}</p>
+          <p className="font-bold text-sm text-shadow">{studentName}</p>
         </div>
         <button
           onClick={onClose}
-          className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/20"
+          className="w-10 h-10 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-md hover:bg-white/20 transition-colors border border-white/10"
         >
-          <X className="h-4 w-4 text-slate-200" />
+          <X className="h-5 w-5 text-white" />
         </button>
       </div>
+
+      {/* Camera Viewport */}
       <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black">
+        {isInitializing && (
+          <div className="absolute inset-0 flex items-center justify-center text-white/50 z-0">
+             <RefreshCw className="animate-spin h-8 w-8" />
+          </div>
+        )}
+        
+        {/* Video Element */}
         <video
           ref={videoRef}
           autoPlay
@@ -1703,33 +1729,57 @@ const CameraModal = ({ onClose, onCapture, studentName }) => {
             isMirrored ? "scale-x-[-1]" : ""
           }`}
         />
-        <div className="absolute inset-0 bg-black/50 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[240px] h-[300px] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] border-2 border-white/50 rounded-lg"></div>
+
+        {/* The Square Overlay (The "Guide") */}
+        <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+          {/* Darken surrounding area */}
+          <div className="absolute inset-0 bg-black/50">
+             {/* Cutout for the square */}
+             <div className="w-full h-full flex items-center justify-center">
+                <div className="relative w-[85vw] max-w-[350px] aspect-square shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] border-2 border-white/80 rounded-xl">
+                    {/* Optional: Corner markers for aesthetic */}
+                    <div className="absolute top-[-2px] left-[-2px] w-4 h-4 border-t-4 border-l-4 border-white rounded-tl-sm"></div>
+                    <div className="absolute top-[-2px] right-[-2px] w-4 h-4 border-t-4 border-r-4 border-white rounded-tr-sm"></div>
+                    <div className="absolute bottom-[-2px] left-[-2px] w-4 h-4 border-b-4 border-l-4 border-white rounded-bl-sm"></div>
+                    <div className="absolute bottom-[-2px] right-[-2px] w-4 h-4 border-b-4 border-r-4 border-white rounded-br-sm"></div>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
-      <div className="h-32 bg-black flex items-center justify-around px-8 pb-4">
+
+      {/* Controls Footer */}
+      <div className="h-36 bg-black flex items-center justify-around px-8 pb-6 pt-4 z-20">
+        {/* Flip Button */}
         <button
           onClick={() => setIsMirrored(!isMirrored)}
-          className={`p-3 rounded-full transition-all ${
+          className={`p-4 rounded-full transition-all border ${
             isMirrored
-              ? "bg-indigo-600 text-white"
-              : "bg-zinc-800 text-zinc-400"
+              ? "bg-indigo-600/20 border-indigo-500 text-indigo-400"
+              : "bg-zinc-800 border-zinc-700 text-zinc-400"
           }`}
         >
           <FlipHorizontal className="h-6 w-6" />
         </button>
+
+        {/* Capture Button */}
         <button
           onClick={takePicture}
-          className="w-20 h-20 rounded-full bg-white border-4 border-zinc-200 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.4)] active:scale-95 transition-transform"
+          className="w-20 h-20 rounded-full bg-white border-4 border-zinc-300 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] active:scale-90 transition-transform duration-150"
         >
-          <div className="w-16 h-16 bg-white rounded-full border border-zinc-300"></div>
+          <div className="w-16 h-16 bg-white rounded-full border-2 border-zinc-200 flex items-center justify-center">
+             <Camera className="h-6 w-6 text-zinc-400 opacity-50" />
+          </div>
         </button>
-        <div className="w-12"></div>
+
+        {/* Spacer to balance layout */}
+        <div className="w-14"></div>
       </div>
     </div>
   );
 };
 
+// --- PreviewModal Component ---
 const PreviewModal = ({
   blob,
   studentName,
@@ -1739,43 +1789,55 @@ const PreviewModal = ({
   onCancel,
 }) => {
   const url = useMemo(() => URL.createObjectURL(blob), [blob]);
+
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[60] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
       <div className="bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col w-full max-w-sm border border-zinc-800">
+        
+        {/* Image Preview Container */}
         <div className="relative bg-black flex items-center justify-center py-8">
-          <img
-            src={url}
-            alt="Preview"
-            className="w-[200px] h-[250px] object-cover rounded-lg shadow-lg border border-white/10"
-          />
+          {/* Close button (only if not uploading) */}
           {!isUploading && (
             <button
               onClick={onCancel}
-              className="absolute top-3 right-3 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 transition-colors z-10"
+              className="absolute top-3 right-3 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 transition-colors z-10 border border-white/10"
             >
               <X className="h-4 w-4" />
             </button>
           )}
+
+          {/* The Captured Image - Displayed as Square */}
+          <div className="relative shadow-2xl rounded-lg overflow-hidden border border-white/20">
+              <img
+                src={url}
+                alt="Preview"
+                // 'aspect-square' ensures it looks exactly like the capture frame
+                className="w-[80vw] max-w-[300px] aspect-square object-cover"
+              />
+          </div>
         </div>
+
+        {/* Action Buttons */}
         <div className="p-5 space-y-5 bg-zinc-900">
           <div className="text-center">
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1 tittle">
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">
               បញ្ជាក់រូបភាព
             </p>
             <h3 className="font-bold text-lg text-white">{studentName}</h3>
           </div>
+
           <div className="flex gap-3">
             <button
               onClick={onRetake}
               disabled={isUploading}
-              className="flex-1 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700 transition-colors text-sm border border-zinc-700"
+              className="flex-1 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700 transition-colors text-sm border border-zinc-700 active:scale-95 duration-100"
             >
               ថតម្តងទៀត
             </button>
             <button
               onClick={onConfirm}
               disabled={isUploading}
-              className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-900/20"
+              className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-900/20 active:scale-95 duration-100 disabled:opacity-50 disabled:active:scale-100"
             >
               {isUploading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
