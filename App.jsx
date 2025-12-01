@@ -776,7 +776,7 @@ export default function App() {
 // 1. Updated Header
 const Header = ({ adminName, adminId, onLogout }) => (
   <header className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg z-30 sticky top-0">
-    <div className="px-4 py-3 flex items-center justify-between">
+    <div className="px-3 py-2 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg overflow-hidden shadow-lg border border-white/20">
           <img
@@ -787,7 +787,7 @@ const Header = ({ adminName, adminId, onLogout }) => (
         </div>
         <div>
           <h1 className="font-bold text-white leading-none text-base tittle">
-            ទិន្នន័យរូបភាព
+            គ្រប់គ្រងទិន្នន័យ
           </h1>
         </div>
       </div>
@@ -795,10 +795,10 @@ const Header = ({ adminName, adminId, onLogout }) => (
       {/* Right Side: Admin Info and Logout */}
       <div className="flex items-center gap-2">
         <div className="text-right">
-          <p className="text-[10px] text-indigo-100 font-medium uppercase tracking-wider opacity-80 mb-[1px]">
+          <p className="text-[10px] text-indigo-100 font-bold uppercase tracking-wider opacity-80 mb-[1px]">
             {adminId === "250" ? "អ្នកគ្រប់គ្រង" : "គណនី"}
           </p>
-          <p className="text-xs text-white font-small leading-none tittle">
+          <p className="text-xs text-white font-bold leading-none tittle">
             {adminName}
           </p>
         </div>
@@ -825,8 +825,8 @@ const SystemPolicyModal = ({ onAccept, onReject }) => (
         <h2 className="text-lg font-bold text-slate-800 tittle">
           គោលការណ៍ប្រើប្រាស់ប្រព័ន្ធ
         </h2>
-        <p className="text-s text-slate-500 mt-1 font-medium">
-          សូមអានគោលការណ៍ខាងក្រោម មុននឹងបន្តប្រើប្រាស់ប្រព័ន្ធ។
+        <p className="text-xs text-slate-500 mt-1 font-medium">
+          សូមអាន និងយល់ព្រមចំពោះគោលការណ៍ខាងក្រោម មុននឹងបន្តប្រើប្រាស់ប្រព័ន្ធ។
         </p>
       </div>
 
@@ -859,7 +859,7 @@ const SystemPolicyModal = ({ onAccept, onReject }) => (
 const PolicyItem = ({ text }) => (
   <div className="flex items-start gap-3">
     <div className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></div>
-    <p className="text-s text-slate-600 leading-relaxed font-medium">{text}</p>
+    <p className="text-xs text-slate-600 leading-relaxed font-medium">{text}</p>
   </div>
 );
 
@@ -1413,19 +1413,19 @@ const AdminDashboard = ({
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/5 text-center">
-              <p className="text-indigo-100 text-[14px] font-bold uppercase tittle">
+              <p className="text-indigo-100 text-[9px] font-bold uppercase tittle">
                 សរុប
               </p>
               <p className="text-2xl font-bold mt-1">{totalStudents}</p>
             </div>
             <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/5 text-center">
-              <p className="text-indigo-100 text-[14px] font-bold uppercase tittle">
+              <p className="text-indigo-100 text-[9px] font-bold uppercase tittle">
                 បានថត
               </p>
               <p className="text-2xl font-bold mt-1">{capturedCount}</p>
             </div>
             <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm border border-white/5 text-center">
-              <p className="text-indigo-100 text-[14px] font-bold uppercase tittle">
+              <p className="text-indigo-100 text-[9px] font-bold uppercase tittle">
                 រួច
               </p>
               <p className="text-2xl font-bold mt-1">{completionRate}%</p>
@@ -1521,7 +1521,7 @@ const AdminDashboard = ({
                           : "bg-green-100 text-green-700"
                       }`}
                     >
-                      {admin.isBlocked ? "បានបិទ" : "Active"}
+                      {admin.isBlocked ? "បិទ" : "សកម្ម"}
                     </span>
                     {admin.id !== "250" && (
                       <button
@@ -1791,335 +1791,248 @@ const PreviewModal = ({
   );
 };
 
-// Updated AdminDetailsModal
-const AdminDetailsModal = ({ admin, allStudents, allAdminLogs, onClose, onDeletePhoto }) => {
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [filterType, setFilterType] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState('users');
-  const [userViewMode, setUserViewMode] = useState('grid');
+const AdminDetailsModal = ({
+  admin,
+  allStudents,
+  allAdminLogs,
+  onClose,
+  onDeletePhoto,
+}) => {
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [filterType, setFilterType] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("users");
+  const [userViewMode, setUserViewMode] = useState("grid");
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [showBatchActions, setShowBatchActions] = useState(false);
-
-  // Get all logs for this admin
   const adminLogs = useMemo(() => {
-    let logs = allAdminLogs.filter(log => log.adminId === admin.id);
-
-    if (filterType !== 'all') {
-      logs = logs.filter(log =>
-        filterType === 'upload' ? log.action === 'UPLOAD_PHOTO' : log.action === 'DELETE_PHOTO'
+    let logs = allAdminLogs.filter((log) => log.adminId === admin.id);
+    if (filterType !== "all") {
+      logs = logs.filter((log) =>
+        filterType === "upload"
+          ? log.action === "UPLOAD_PHOTO"
+          : log.action === "DELETE_PHOTO"
       );
     }
-
     const now = new Date();
-    if (dateFilter === 'today') {
+    if (dateFilter === "today") {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      logs = logs.filter(log => log.timestamp && new Date(log.timestamp) >= today);
-    } else if (dateFilter === 'week') {
+      logs = logs.filter(
+        (log) => log.timestamp && new Date(log.timestamp) >= today
+      );
+    } else if (dateFilter === "week") {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      logs = logs.filter(log => log.timestamp && new Date(log.timestamp) >= weekAgo);
-    } else if (dateFilter === 'month') {
-      const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      logs = logs.filter(log => log.timestamp && new Date(log.timestamp) >= monthAgo);
+      logs = logs.filter(
+        (log) => log.timestamp && new Date(log.timestamp) >= weekAgo
+      );
+    } else if (dateFilter === "month") {
+      const monthAgo = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        now.getDate()
+      );
+      logs = logs.filter(
+        (log) => log.timestamp && new Date(log.timestamp) >= monthAgo
+      );
     }
-
     logs.sort((a, b) => {
       if (!a.timestamp) return 1;
       if (!b.timestamp) return -1;
-      return sortOrder === 'asc'
+      return sortOrder === "asc"
         ? a.timestamp - b.timestamp
         : b.timestamp - a.timestamp;
     });
-
     return logs;
   }, [allAdminLogs, admin.id, filterType, dateFilter, sortOrder]);
-
-  const uploadLogs = adminLogs.filter(log => log.action === 'UPLOAD_PHOTO');
-  const deleteLogs = adminLogs.filter(log => log.action === 'DELETE_PHOTO');
-
   const uploadedStudents = useMemo(() => {
-    const students = allStudents.filter(student => {
-      // Find students who have an upload log from this admin
-      // Note: This logic assumes current photo was uploaded by this admin if a log exists
-      // A more robust check would verify the log timestamp matches close to last modified, but this suffices for simple tracking
-      return adminLogs.some(log => log.studentId === student.id && log.action === 'UPLOAD_PHOTO');
-    });
-    return students;
+    return allStudents.filter((student) =>
+      adminLogs.some(
+        (log) => log.studentId === student.id && log.action === "UPLOAD_PHOTO"
+      )
+    );
   }, [allStudents, adminLogs]);
-
   const formatTimestamp = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    return new Date(timestamp).toLocaleString('km-KH');
-  };
-
-  const toggleUserSelection = (studentId) => {
-    const newSelection = new Set(selectedUsers);
-    if (newSelection.has(studentId)) {
-      newSelection.delete(studentId);
-    } else {
-      newSelection.add(studentId);
-    }
-    setSelectedUsers(newSelection);
-    setShowBatchActions(newSelection.size > 0);
+    if (!timestamp) return "N/A";
+    return new Date(timestamp).toLocaleString("km-KH");
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      ></div>
       <div className="bg-white w-full max-w-4xl rounded-2xl p-5 shadow-2xl relative z-10 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-slate-800">Admin: {admin.name}</h3>
-          <button onClick={onClose} className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center hover:bg-slate-200 transition-colors">
+          <h3 className="text-xl font-bold text-slate-800 tittle">
+            Admin: {admin.name}
+          </h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center hover:bg-slate-200 transition-colors"
+          >
             <X className="h-4 w-4 text-slate-600" />
           </button>
         </div>
-
-        <div className="bg-slate-50 rounded-lg p-3 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
-              <User className="h-6 w-6 text-indigo-600" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-medium text-slate-800">{admin.name}</h4>
-              <span className="text-[9px] font-mono text-slate-500 bg-slate-100 px-1 py-0.5 rounded">ID: {admin.id}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-white rounded p-2">
-                 <div className="text-xs text-slate-500">Uploads</div>
-                 <div className="font-bold text-indigo-600">{uploadLogs.length}</div>
-              </div>
-              <div className="bg-white rounded p-2">
-                 <div className="text-xs text-slate-500">Deletes</div>
-                 <div className="font-bold text-red-500">{deleteLogs.length}</div>
-              </div>
-              <div className="bg-white rounded p-2">
-                 <div className="text-xs text-slate-500">Users</div>
-                 <div className="font-bold text-green-600">{uploadedStudents.length}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tab Controls */}
-        <div className="flex border-b border-slate-200 mb-4">
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'users' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-700'}`}
-          >
-            Users ({uploadedStudents.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('logs')}
-            className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'logs' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-700'}`}
-          >
-            Logs ({adminLogs.length})
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button
-             onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-             className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-xs text-slate-600 hover:bg-slate-200"
-          >
-             {sortOrder === 'asc' ? <SortAsc className="h-3 w-3"/> : <SortDesc className="h-3 w-3"/>}
-             Sort
-          </button>
-          
-          <div className="flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
-             <Filter className="h-3 w-3 text-slate-500"/>
-             <select 
-               className="bg-transparent text-xs text-slate-600 outline-none"
-               value={filterType}
-               onChange={(e) => setFilterType(e.target.value)}
-             >
-               <option value="all">All Types</option>
-               <option value="upload">Uploads</option>
-               <option value="delete">Deletes</option>
-             </select>
-          </div>
-
-          <div className="flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
-             <Clock className="h-3 w-3 text-slate-500"/>
-             <select 
-               className="bg-transparent text-xs text-slate-600 outline-none"
-               value={dateFilter}
-               onChange={(e) => setDateFilter(e.target.value)}
-             >
-               <option value="all">Any Time</option>
-               <option value="today">Today</option>
-               <option value="week">This Week</option>
-               <option value="month">This Month</option>
-             </select>
-          </div>
-          
-          {activeTab === 'users' && (
-             <div className="ml-auto flex gap-1">
-                <button onClick={() => setUserViewMode('grid')} className={`p-1 rounded ${userViewMode === 'grid' ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400'}`}><Grid3X3 className="h-4 w-4"/></button>
-                <button onClick={() => setUserViewMode('list')} className={`p-1 rounded ${userViewMode === 'list' ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400'}`}><List className="h-4 w-4"/></button>
-             </div>
-          )}
-        </div>
-
-        {/* Content */}
         <div className="flex-1 overflow-y-auto min-h-0">
-           {activeTab === 'users' ? (
-              userViewMode === 'grid' ? (
-                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                    {uploadedStudents.map(student => (
-                       <div key={student.id} className="relative group border rounded-lg overflow-hidden bg-slate-50">
-                          <div className="aspect-[4/5] relative">
-                             {student['រូបថត'] ? (
-                                <img src={student['រូបថត']} className="w-full h-full object-cover" />
-                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-300"><User className="h-8 w-8"/></div>
-                             )}
-                             <button onClick={() => onDeletePhoto(student.id)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 className="h-3 w-3" />
-                             </button>
-                          </div>
-                          <div className="p-2">
-                             <div className="text-xs font-bold truncate">{student['ឈ្មោះ']}</div>
-                             <div className="text-[10px] text-slate-500">{student.id}</div>
-                          </div>
-                       </div>
-                    ))}
-                 </div>
-              ) : (
-                 <div className="space-y-2">
-                    {uploadedStudents.map(student => (
-                       <div key={student.id} className="flex items-center gap-3 p-2 border rounded-lg hover:bg-slate-50">
-                          <div className="w-10 h-10 bg-slate-200 rounded overflow-hidden">
-                             {student['រូបថត'] && <img src={student['រូបថត']} className="w-full h-full object-cover"/>}
-                          </div>
-                          <div className="flex-1">
-                             <div className="text-sm font-bold">{student['ឈ្មោះ']}</div>
-                             <div className="text-xs text-slate-500">{student.id}</div>
-                          </div>
-                          <button onClick={() => onDeletePhoto(student.id)} className="text-red-500 p-2 hover:bg-red-50 rounded-full">
-                             <Trash2 className="h-4 w-4"/>
-                          </button>
-                       </div>
-                    ))}
-                 </div>
-              )
-           ) : (
-              <div className="space-y-2">
-                 {adminLogs.map(log => {
-                    const student = allStudents.find(s => s.id === log.studentId);
-                    return (
-                       <div key={log.id} className="p-3 border rounded-lg flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${log.action === 'UPLOAD_PHOTO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                             {log.action === 'UPLOAD_PHOTO' ? <Camera className="h-4 w-4"/> : <Trash2 className="h-4 w-4"/>}
-                          </div>
-                          <div className="flex-1">
-                             <div className="text-sm font-medium">
-                                {log.action === 'UPLOAD_PHOTO' ? 'Uploaded photo for' : 'Deleted photo of'} 
-                                <span className="font-bold ml-1">{student ? student['ឈ្មោះ'] : log.studentId}</span>
-                             </div>
-                             <div className="text-xs text-slate-500">{formatTimestamp(log.timestamp)}</div>
-                          </div>
-                       </div>
-                    )
-                 })}
-                 {adminLogs.length === 0 && (
-                    <div className="text-center py-8 text-slate-400">No logs found for this period</div>
-                 )}
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+            {uploadedStudents.map((student) => (
+              <div
+                key={student.id}
+                className="relative group border rounded-lg overflow-hidden bg-slate-50"
+              >
+                <div className="aspect-[4/5] relative">
+                  {student["រូបថត"] ? (
+                    <img
+                      src={student["រូបថត"]}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                      <User className="h-8 w-8" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-2">
+                  <div className="text-xs font-bold truncate">
+                    {student["ឈ្មោះ"]}
+                  </div>
+                </div>
               </div>
-           )}
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// --- Custom Alert/Confirm UI ---
 const AlertToast = ({ isOpen, message, type }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed top-0 left-0 w-full h-full pointer-events-none flex items-start justify-center pt-6 z-[100]">
-      <div className={`pointer-events-auto bg-white/95 backdrop-blur-md px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 animate-in slide-in-from-top duration-300 border-l-4 ${type === 'error' ? 'border-red-500 text-red-600' : 'border-green-500 text-green-700'
-        }`}>
-        {type === 'error' ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-        <span className="font-bold text-xs shadow-sm">{message}</span>
-      </div>
+      {" "}
+      <div
+        className={`pointer-events-auto bg-white/95 backdrop-blur-md px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 animate-in slide-in-from-top duration-300 border-l-4 ${
+          type === "error"
+            ? "border-red-500 text-red-600"
+            : "border-green-500 text-green-700"
+        }`}
+      >
+        {" "}
+        {type === "error" ? (
+          <AlertTriangle className="h-4 w-4" />
+        ) : (
+          <CheckCircle2 className="h-4 w-4" />
+        )}{" "}
+        <span className="font-bold text-xs shadow-sm">{message}</span>{" "}
+      </div>{" "}
     </div>
   );
 };
-
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onCancel}></div>
+      {" "}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        onClick={onCancel}
+      ></div>{" "}
       <div className="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl relative z-10 animate-in fade-in zoom-in duration-200 text-center">
+        {" "}
         <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3 text-red-500">
-          <AlertTriangle className="h-7 w-7" />
-        </div>
-        <h3 className="text-lg font-bold text-slate-800 mb-2">{title}</h3>
-        <p className="text-slate-500 text-sm mb-5 leading-relaxed">{message}</p>
+          {" "}
+          <AlertTriangle className="h-7 w-7" />{" "}
+        </div>{" "}
+        <h3 className="text-lg font-bold text-slate-800 mb-2 tittle">
+          {title}
+        </h3>{" "}
+        <p className="text-slate-500 text-sm mb-5 leading-relaxed">{message}</p>{" "}
         <div className="flex gap-2">
+          {" "}
           <button
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-lg bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors"
           >
-            បោះបង់
-          </button>
+            {" "}
+            បោះបង់{" "}
+          </button>{" "}
           <button
             onClick={onConfirm}
             className="flex-1 py-2.5 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 shadow-lg shadow-red-200 transition-colors"
           >
-            បញ្ជាក់
-          </button>
-        </div>
-      </div>
+            {" "}
+            បញ្ជាក់{" "}
+          </button>{" "}
+        </div>{" "}
+      </div>{" "}
     </div>
   );
 };
-
-// --- Bottom Navigation ---
 const BottomNav = ({ activeTab, onChange, pendingCount }) => {
   const tabs = [
-    { id: 'home', icon: Search, label: 'ស្វែងរក' },
-    { id: 'pending', icon: ImageOff, label: 'ខ្វះ', badge: pendingCount },
-    { id: 'delete', icon: Trash2, label: 'លុប' },
-    { id: 'admin', icon: User, label: 'Admin' }
+    { id: "home", icon: Search, label: "ស្វែងរក" },
+    { id: "pending", icon: ImageOff, label: "ខ្វះ", badge: pendingCount },
+    { id: "delete", icon: Trash2, label: "លុប" },
+    { id: "admin", icon: User, label: "Admin" },
   ];
   return (
     <nav className="bg-white/90 backdrop-blur-md fixed bottom-0 w-full pb-safe z-40 border-t border-slate-200 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+      {" "}
       <div className="flex justify-around items-center h-16 px-2">
-        {tabs.map(tab => {
+        {" "}
+        {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => onChange(tab.id)}
-              className={`relative flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
-                }`}
+              className={`relative flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${
+                isActive
+                  ? "text-indigo-600"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
             >
-              <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-indigo-50 -translate-y-1' : ''
-                }`}>
-                <Icon className={`h-5 w-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-              </div>
-              <span className={`text-[9px] font-bold mt-0.5 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-                } transition-all absolute bottom-1`}>
-                {tab.label}
-              </span>
+              {" "}
+              <div
+                className={`p-1.5 rounded-xl transition-all duration-300 ${
+                  isActive ? "bg-indigo-50 -translate-y-1" : ""
+                }`}
+              >
+                {" "}
+                <Icon
+                  className={`h-5 w-5 ${
+                    isActive ? "stroke-[2.5px]" : "stroke-2"
+                  }`}
+                />{" "}
+              </div>{" "}
+              <span
+                className={`text-[9px] font-bold mt-0.5 ${
+                  isActive
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-2"
+                } transition-all absolute bottom-1`}
+              >
+                {" "}
+                {tab.label}{" "}
+              </span>{" "}
               {tab.badge > 0 && (
                 <span className="absolute top-2 right-1/4 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border border-white shadow-sm animate-pulse">
-                  {tab.badge > 99 ? '99+' : tab.badge}
+                  {" "}
+                  {tab.badge > 99 ? "99+" : tab.badge}{" "}
                 </span>
-              )}
+              )}{" "}
             </button>
           );
-        })}
-      </div>
+        })}{" "}
+      </div>{" "}
     </nav>
   );
 };
 
-const rootElement = document.getElementById('root');
+const rootElement = document.getElementById("root");
 if (rootElement) {
   const root = createRoot(rootElement);
   root.render(<App />);
